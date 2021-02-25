@@ -12,11 +12,11 @@ defmodule Hw05Web.GameChannel do
       socket = socket
       |> assign(:name, name)
       |> assign(:user, Map.get(payload, "name"))
-      |> assign(:playerType, "player")
+      |> assign(:playerType, "observer")
       game = GameServer.peek(name)
       view = socket.assigns[:name]
-      |> GameServer.joinLobby()
-      |> Game.view(Map.get(payload, "name"), "player")
+      |> GameServer.peek()
+      |> Game.view(Map.get(payload, "name"), "observer")
       {:ok, view, socket}
     else
       {:error, %{reason: "unauthorized"}}

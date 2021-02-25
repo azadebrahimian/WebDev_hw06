@@ -176,7 +176,7 @@ function Login() {
 }
 
 function Setup() {
-  const [playerType, setPlayerType] = useState("player");
+  const [playerType, setPlayerType] = useState("observer");
   const [ready, setReady] = useState(false);
 
   function setAndSendPlayerType(type) {
@@ -198,8 +198,8 @@ function Setup() {
         <div className="column">
           <label>Choose a role: </label>
           <select name="role" id="role" onChange={(e) => setAndSendPlayerType(e.target.value)}>
-            <option value="player" selected>Player</option>
-            <option value="observer">Observer</option>
+            <option value="player">Player</option>
+            <option value="observer" selected>Observer</option>
           </select>
           {playerType === "player" &&
             <div>

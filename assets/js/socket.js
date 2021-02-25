@@ -6,7 +6,7 @@ let socket = new Socket(
 );
 socket.connect();
 
-var channel;// = socket.channel("game:1", {});
+var channel = socket.channel("game:1", {});
 
 let state = {
   gameStarted: false,
@@ -20,7 +20,7 @@ let state = {
   totalPlayers: 0,
   totalReadies: 0,
   playersReady: false,
-  playerType: "player"
+  playerType: "observer"
 };
 
 let callback = null;
@@ -39,7 +39,7 @@ export function ch_join(cb) {
 }
 
 export function ch_login(name, gameName) {
-  channel = socket.channel("game:".concat(gameName), { name: name, gameName: gameName });
+  // channel = socket.channel("game:".concat(gameName), { name: name, gameName: gameName });
 
   channel.join()
     .receive("ok", state_update)
