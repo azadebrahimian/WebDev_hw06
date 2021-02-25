@@ -6,7 +6,7 @@ let socket = new Socket(
 );
 socket.connect();
 
-let channel = socket.channel("game:1", {});
+var channel;// = socket.channel("game:1", {});
 
 let state = {
   gameStarted: false,
@@ -39,8 +39,7 @@ export function ch_join(cb) {
 }
 
 export function ch_login(name, gameName) {
-  // channel.leave();
-  channel = socket.channel("game:".concat(gameName), {});
+  channel = socket.channel("game:".concat(gameName), { name: name, gameName: gameName });
 
   channel.join()
     .receive("ok", state_update)
@@ -48,11 +47,11 @@ export function ch_login(name, gameName) {
       console.log("Unable to join", resp)
     });
 
-  channel.push("login", { name: name, gameName: gameName })
-    .receive("ok", state_update)
-    .receive("error", resp => {
-      console.log("Unable to login", resp)
-    });
+  // channel.push("login", { name: name, gameName: gameName })
+  //   .receive("ok", state_update)
+  //   .receive("error", resp => {
+  //     console.log("Unable to login", resp)
+  //   });
 }
 
 export function ch_set_player_type(type) {
@@ -79,11 +78,12 @@ export function ch_reset() {
     .receive("error", resp => { console.log("Unable to push", resp) });
 }
 
-channel.join()
-  .receive("ok", state_update)
-  .receive("error", resp => {
-    console.log("Unable to join", resp)
-  });
+// channel.join()
+//   .receive("ok", state_update)
+//   .receive("error", resp => {
+//     console.log("Unable to join", resp)
+//   });
 
-
-channel.on("view", state_update);
+if (channel) {
+  channel.on("view", state_update);
+}

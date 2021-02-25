@@ -85,6 +85,7 @@ defmodule Bulls.Game do
             currGuesses = st.guesses
             currGuesses = currGuesses + 1
             newGuess = ""
+            IO.inspect st
             %{
                 invalidGuess: invalidG,
                 won: w,
@@ -93,7 +94,8 @@ defmodule Bulls.Game do
                 secretCode: st.secretCode,
                 totalPlayers: st.totalPlayers,
                 totalReadies: st.totalReadies,
-                playersReady: st.playersReady
+                playersReady: st.playersReady,
+                gameName: st.gameName
             }
         end
     end
@@ -136,6 +138,7 @@ defmodule Bulls.Game do
     end
 
     def view(st, name, type) do
+        IO.inspect st.secretCode
         %{
             history: st.history,
             guesses: st.guesses,

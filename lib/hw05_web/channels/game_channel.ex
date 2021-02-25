@@ -6,30 +6,34 @@ defmodule Hw05Web.GameChannel do
 
   @impl true
   def join("game:" <> name, payload, socket) do
+    IO.inspect "IPFOJEWPIOJGIOEPJGOWIGEWJPOG"
     if authorized?(payload) do
       GameServer.start(name)
       socket = socket
       |> assign(:name, name)
-      |> assign(:user, "")
+      |> assign(:user, Map.get(payload, "name"))
+      |> assign(:playerType, "player")
       game = GameServer.peek(name)
-      view = Game.view(game, "", "player")
+      view = socket.assigns[:name]
+      |> GameServer.joinLobby()
+      |> Game.view(Map.get(payload, "name"), "player")
       {:ok, view, socket}
     else
       {:error, %{reason: "unauthorized"}}
     end
   end
 
-  @impl true
-  def handle_in("login", %{"name" => user, "gameName" => name}, socket) do
-    socket = assign(socket, :user, user)
-    socket = assign(socket, :name, name)
-    socket = assign(socket, :playerType, "player")
-    view = socket.assigns[:name]
-    |> GameServer.joinLobby()
-    |> Game.view(user, "player")
-    broadcast(socket, "view", view)
-    {:reply, {:ok, view}, socket}
-  end
+  #@impl true
+  #def handle_in("login", %{"name" => user, "gameName" => name}, socket) do
+  #  socket = assign(socket, :user, user)
+  #  socket = assign(socket, :name, name)
+  #  socket = assign(socket, :playerType, "player")
+  #  view = socket.assigns[:name]
+  #  |> GameServer.joinLobby()
+  #  |> Game.view(user, "player")
+  #  broadcast(socket, "view", view)
+  #  {:reply, {:ok, view}, socket}
+  #end
 
   @impl true
   def handle_in("setType", %{"type" => type}, socket) do
@@ -85,6 +89,17 @@ defmodule Hw05Web.GameChannel do
     msg = %{msg | name: user}
     msg = %{msg | playerType: playerType}
     push(socket, "view", msg)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:after_join, socket) do
+    user = socket.assigns[:user]
+    name = socket.assigns[:name]
+    view = socket.assigns[:name]
+    |> GameServer.joinLobby()
+    |> Game.view(name, "player")
+    broadcast(socket, "view", view)
     {:noreply, socket}
   end
 
