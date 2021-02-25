@@ -12,7 +12,8 @@ defmodule Hw05.Application do
       # Start the PubSub system
       {Phoenix.PubSub, name: Hw05.PubSub},
       # Start the Endpoint (http/https)
-      Hw05Web.Endpoint
+      Hw05Web.Endpoint,
+      Bulls.GameSup
       # Start a worker by calling: Hw05.Worker.start_link(arg)
       # {Hw05.Worker, arg}
     ]

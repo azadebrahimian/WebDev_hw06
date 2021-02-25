@@ -2,7 +2,7 @@ import { Socket } from "phoenix";
 
 let socket = new Socket(
   "/socket",
-  { params: { token: "" } }
+  { params: { token: "" } },
 );
 socket.connect();
 
@@ -14,7 +14,13 @@ let state = {
   history: [],
   guesses: 0,
   invalidGuess: false,
-  won: false
+  won: false,
+  name: "",
+  gameName: "",
+  totalPlayers: 0,
+  totalReadies: 0,
+  playersReady: false,
+  playerType: "player"
 };
 
 let callback = null;
@@ -32,14 +38,31 @@ export function ch_join(cb) {
   callback(state);
 }
 
-export function ch_begin() {
-  channel.push("begin", {})
+export function ch_login(name, gameName) {
+  // channel.leave();
+  channel = socket.channel("game:".concat(gameName), {});
+
+  channel.join()
+    .receive("ok", state_update)
+    .receive("error", resp => {
+      console.log("Unable to join", resp)
+    });
+
+  channel.push("login", { name: name, gameName: gameName })
+    .receive("ok", state_update)
+    .receive("error", resp => {
+      console.log("Unable to login", resp)
+    });
+}
+
+export function ch_set_player_type(type) {
+  channel.push("setType", { type: type })
     .receive("ok", state_update)
     .receive("error", resp => { console.log("Unable to push", resp) });
 }
 
-export function ch_enter(val) {
-  channel.push("enter", val)
+export function ch_ready_up(ready) {
+  channel.push("readyUp", { ready: ready })
     .receive("ok", state_update)
     .receive("error", resp => { console.log("Unable to push", resp) });
 }
@@ -58,4 +81,9 @@ export function ch_reset() {
 
 channel.join()
   .receive("ok", state_update)
-  .receive("error", resp => { console.log("Unable to join", resp) });
+  .receive("error", resp => {
+    console.log("Unable to join", resp)
+  });
+
+
+channel.on("view", state_update);

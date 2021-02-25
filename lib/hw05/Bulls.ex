@@ -88,10 +88,12 @@ defmodule Bulls.Game do
             %{
                 invalidGuess: invalidG,
                 won: w,
-                #guess: "",
                 history: currHistory,
                 guesses: currGuesses,
-                secretCode: st.secretCode
+                secretCode: st.secretCode,
+                totalPlayers: st.totalPlayers,
+                totalReadies: st.totalReadies,
+                playersReady: st.playersReady
             }
         end
     end
@@ -104,17 +106,6 @@ defmodule Bulls.Game do
             false
         end
     end
-
-    #def start_new_game(st) do
-    #    %{
-    #        guess: "",
-    #        secretCode: create_secret_code([]),
-    #        history: [],
-    #        guesses: 0,
-    #        invalidGuess: false,
-    #        won: false
-    #    }
-    #end
     
     def create_secret_code(arr) do
         if length(arr) == 4 do
@@ -130,24 +121,78 @@ defmodule Bulls.Game do
         end
     end
 
-    def begin() do
+    def begin(name) do
         %{
-            #guess: "",
             secretCode: create_secret_code([]),
             history: [],
             guesses: 0,
             invalidGuess: false,
-            won: false
+            won: false,
+            totalPlayers: 0,
+            totalReadies: 0,
+            playersReady: false,
+            gameName: name
         }
     end
 
-    def view(st) do
+    def view(st, name, type) do
         %{
-            #guess: st.guess,
             history: st.history,
             guesses: st.guesses,
             invalidGuess: st.invalidGuess,
-            won: st.won
+            won: st.won,
+            name: name,
+            totalPlayers: st.totalPlayers,
+            totalReadies: st.totalReadies,
+            playersReady: st.playersReady,
+            playerType: type,
+            gameName: st.gameName
+        }
+    end
+
+    def set_player_type(st, type) do
+        tp = if type == "player" do
+            st.totalPlayers + 1
+        else
+            st.totalPlayers - 1
+        end
+
+        %{
+            history: st.history,
+            guesses: st.guesses,
+            invalidGuess: st.invalidGuess,
+            won: st.won,
+            secretCode: st.secretCode,
+            totalPlayers: tp,
+            totalReadies: st.totalReadies,
+            playersReady: st.playersReady,
+            gameName: st.gameName
+        }
+    end
+
+    def set_ready(st, ready) do
+        tr = if ready do
+            st.totalReadies + 1
+        else
+            st.totalReadies - 1
+        end
+
+        pr = if (st.totalPlayers > 0) and (tr == st.totalPlayers) do
+            true
+        else
+            false
+        end
+
+        %{
+            history: st.history,
+            guesses: st.guesses,
+            invalidGuess: st.invalidGuess,
+            won: st.won,
+            secretCode: st.secretCode,
+            totalPlayers: st.totalPlayers,
+            totalReadies: tr,
+            playersReady: pr,
+            gameName: st.gameName
         }
     end
 end
