@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ch_login, ch_join, ch_push, ch_reset,
+  ch_login, ch_join, ch_push,
   ch_set_player_type, ch_ready_up
 } from './socket';
 
@@ -18,29 +18,15 @@ function Bulls() {
     totalPlayers: 0,
     totalReadies: 0,
     userList: [],
-    previousWinners: [],
-    roundEndTime: "",
-    roundStartTime: ""
+    previousWinners: []
   });
   const [guess, setGuess] = useState("");
   const [recentGuess, setRecentGuess] = useState("")
 
-  let { history, guesses, invalidGuess, won,
-    name, gameName, playersReady, ready, playerType,
-    totalPlayers, totalReadies, userList, previousWinners,
-    roundEndTime, roundStartTime } = state;
-
-
-  const [time, setTime] = React.useState(0);
+  let { name, gameName, history, userList, previousWinners } = state;
 
   useEffect(() => {
     ch_join(setState);
-    const timer = setInterval(() => {
-      setTime(prevTime => prevTime + 1); // <-- Change this line!
-    }, 1000);
-    return () => {
-      clearInterval(timer);
-    };
   });
 
   function checkIfNumber(e) {
@@ -107,22 +93,21 @@ function Bulls() {
     }
   }
 
-  function startNewGame() {
-    ch_reset();
-    setGuess("");
-  }
-
   if (state.name === "" || state.gameName === "") {
     return (
       <Login />
     );
   }
 
+
+
   if (!state.playersReady) {
     return (
       <div>
+        <p>Game Name: {gameName}</p>
+        <p>Name: {name}</p>
         <Setup state={state} />
-        <p>Previous Winners: {previousWinners}</p>
+        <p>Previous Winners: {previousWinners.toString()}</p>
         <div id="Scoreboard">
           <table id="Scoreboard-table">
             <thead>
@@ -141,34 +126,22 @@ function Bulls() {
     );
   }
 
-  // if (!state.playersReady) {
-  //   return (
-  //     <Setup state={state} />
-  //   );
-  // }
+  function checkIfInvalid(n) {
+    var s = Array.from(new Set(n));
+    return (s.length !== n.length) || n.length !== 4;
+  }
 
-  // if (guesses >= 9) {
-  //   return (
-  //     <div className="Ending-screen">
-  //       <div>You lost.</div>
-  //       <button className="Ending-button" onClick={startNewGame}>Play again?</button>
-  //     </div>
-  //   );
-  // }
-
-  function calculateTime(start, end) {
-    let sd = new Date(start);
-    let ed = new Date(end);
-    let cd = new Date();
-    let diff1 = sd - cd;
-    let diff2 = ed - cd;
-    return diff2 - diff1;
+  function calcGuess(g) {
+    if (checkIfInvalid(g) && (g !== "") && (g !== "pass")) {
+      return ("Invalid");
+    } else {
+      return (g);
+    }
   }
 
   return (
     <div className="Game">
-      {/* <p>Time: {subtractTime(roundEndTime)}</p> */}
-      <p>Time: {calculateTime(roundStartTime, roundEndTime)}</p>
+      <p>Game Name: {gameName}</p>
       <p>Name: {name}</p>
       <div id="History">
         <table id="History-table">
@@ -188,9 +161,6 @@ function Bulls() {
       </div>
       {state.playerType === "player" &&
         <div id="Base">
-          <button className="Base-button" onClick={startNewGame}>
-            Restart!
-        </button>
           <input
             value={guess}
             id="Guess"
@@ -204,12 +174,8 @@ function Bulls() {
           <button onClick={guessPass}>
             Pass
           </button>
-          <p>Current Guess: {recentGuess}</p>
+          <p>Current Guess: {calcGuess(recentGuess)}</p>
         </div>}
-      {/* {invalidGuess &&
-        <div id="Invalid">
-          Invalid Entry
-      </div>} */}
     </div >
   );
 }

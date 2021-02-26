@@ -56,17 +56,6 @@ defmodule Hw05Web.GameChannel do
     {:reply, {:ok, view}, socket}
   end
 
-  @impl true
-  def handle_in("reset", _, socket) do
-    user = socket.assigns[:user]
-    playerType = socket.assigns[:playerType]
-    view = socket.assigns[:name]
-    |> GameServer.reset()
-    |> Game.view(user, playerType)
-    broadcast(socket, "view", view)
-    {:reply, {:ok, view}, socket}
-  end
-
   intercept ["view"]
 
   @impl true
@@ -78,17 +67,6 @@ defmodule Hw05Web.GameChannel do
     push(socket, "view", msg)
     {:noreply, socket}
   end
-
-  #@impl true
-  #def handle_info(:after_join, socket) do
-  #  user = socket.assigns[:user]
-  #  name = socket.assigns[:name]
-  #  view = socket.assigns[:name]
-  #  |> GameServer.joinLobby()
-  #  |> Game.view(name, "player")
-  #  broadcast(socket, "view", view)
-  #  {:noreply, socket}
-  #end
 
   # Add authorization logic here as required.
   defp authorized?(_payload) do

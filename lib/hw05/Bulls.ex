@@ -60,7 +60,6 @@ defmodule Bulls.Game do
     def guess_code(st, guess, playerName) do
         invalidG = ((String.length(guess) != 4) or (not check_if_unique(guess))) and (guess !== "pass")
 
-        # Assume all entries are valid
         if invalidG do
             %{
                 invalidGuess: true,
@@ -71,7 +70,10 @@ defmodule Bulls.Game do
                 totalPlayers: st.totalPlayers,
                 totalReadies: st.totalReadies,
                 playersReady: st.playersReady,
-                gameName: st.gameName
+                gameName: st.gameName,
+                currRoundHistory: st.currRoundHistory,
+                userList: st.userList,
+                previousWinners: st.previousWinners
             }
         else
             {b,c} = if guess == "pass" do
@@ -79,26 +81,10 @@ defmodule Bulls.Game do
             else
                 check_for_bulls_cows(st, guess)
             end
-            
-            #{b,c} = check_for_bulls_cows(st, guess)
-            #w = if b == 4 do
-            #    true
-            #else
-            #    st.won
-            #end
-            #w = b == 4 or st.won
-            
-            #currHistory = st.history
-            #currHistory = currHistory ++ [%{guess: guess, bulls: b, cows: c}]
-            
-            
+
             currHistory = st.currRoundHistory
             currHistory = make_or_alter_guess(currHistory, guess, b, c, playerName, st.guesses)
-            #currHistory = currHistory ++ [%{guess: guess, bulls: b, cows: c, user: playerName, roundNo: st.guesses}]
-            # WHEN NAMES ARE WORKING, COMMENT OUT THE LINE ABOVE ME AND REPLACE WITH LINE ABOVE IT
-           
-            #currGuesses = st.guesses
-            #currGuesses = currGuesses + 1
+            
             newGuess = ""
             
             if length(currHistory) == st.totalPlayers do
@@ -107,7 +93,6 @@ defmodule Bulls.Game do
                 newHistory = newHistory ++ currHistory
                 if w do
                     pw = calculate_winners(currHistory)
-                    #ul = updateWinsLosses(st.userList, pw)
                     {listOfPlayers,_acc} = Enum.map_reduce(currHistory, 0, fn x,acc -> {Map.get(x, :user),acc} end)
                     ul = updateWinsLosses(st.userList, pw, listOfPlayers)
                     %{
@@ -121,9 +106,7 @@ defmodule Bulls.Game do
                         gameName: st.gameName,
                         currRoundHistory: [],
                         userList: ul,
-                        previousWinners: pw,
-                        roundEndTime: "",
-                        roundStartTime: ""
+                        previousWinners: pw
                     }
                 else
                     currTime = NaiveDateTime.utc_now()
@@ -138,9 +121,7 @@ defmodule Bulls.Game do
                         gameName: st.gameName,
                         currRoundHistory: [],
                         userList: st.userList,
-                        previousWinners: st.previousWinners,
-                        roundEndTime: NaiveDateTime.to_iso8601(NaiveDateTime.add(currTime, 30, :second)),
-                        roundStartTime: NaiveDateTime.to_iso8601(currTime)
+                        previousWinners: st.previousWinners
                     }
                 end
             else
@@ -155,23 +136,9 @@ defmodule Bulls.Game do
                     gameName: st.gameName,
                     currRoundHistory: currHistory,
                     userList: st.userList,
-                    previousWinners: st.previousWinners,
-                    roundEndTime: st.roundEndTime,
-                    roundStartTime: st.roundStartTime
+                    previousWinners: st.previousWinners
                 }
             end
-            #%{
-            #    invalidGuess: invalidG,
-            #    won: w,
-            #    history: currHistory,
-            #    guesses: currGuesses,
-            #    secretCode: st.secretCode,
-            #    totalPlayers: st.totalPlayers,
-            #    totalReadies: st.totalReadies,
-            #    playersReady: st.playersReady,
-            #    gameName: st.gameName,
-            #    currRoundHistory: st.currRoundHistory
-            #}
         end
     end
 
@@ -193,9 +160,7 @@ defmodule Bulls.Game do
                 gameName: st.gameName,
                 currRoundHistory: [],
                 userList: ul,
-                previousWinners: pw,
-                roundEndTime: "",
-                roundStartTime: ""
+                previousWinners: pw
             }
         else
             currTime = NaiveDateTime.utc_now()
@@ -213,9 +178,7 @@ defmodule Bulls.Game do
                 gameName: st.gameName,
                 currRoundHistory: [],
                 userList: st.userList,
-                previousWinners: st.previousWinners,
-                roundEndTime: NaiveDateTime.to_iso8601(NaiveDateTime.add(currTime, 30, :second)),
-                roundStartTime: NaiveDateTime.to_iso8601(currTime)
+                previousWinners: st.previousWinners
             }
         end
     end
@@ -327,9 +290,7 @@ defmodule Bulls.Game do
             gameName: name,
             currRoundHistory: [],
             userList: [],
-            previousWinners: [],
-            roundEndTime: "",
-            roundStartTime: ""
+            previousWinners: []
         }
     end
 
@@ -350,9 +311,7 @@ defmodule Bulls.Game do
                 gameName: st.gameName,
                 currRoundHistory: st.currRoundHistory,
                 userList: ul,
-                previousWinners: st.previousWinners,
-                roundEndTime: st.roundEndTime,
-                roundStartTime: st.roundStartTime
+                previousWinners: st.previousWinners
             }
         end
     end
@@ -382,9 +341,7 @@ defmodule Bulls.Game do
             playerType: type,
             gameName: st.gameName,
             userList: st.userList,
-            previousWinners: st.previousWinners,
-            roundEndTime: st.roundEndTime,
-            roundStartTime: st.roundStartTime
+            previousWinners: st.previousWinners
         }
     end
 
@@ -420,9 +377,7 @@ defmodule Bulls.Game do
             gameName: st.gameName,
             currRoundHistory: st.currRoundHistory,
             userList: ul,
-            previousWinners: st.previousWinners,
-            roundEndTime: st.roundEndTime,
-            roundStartTime: st.roundStartTime
+            previousWinners: st.previousWinners
         }
     end
 
@@ -435,13 +390,6 @@ defmodule Bulls.Game do
 
         pr = (st.totalPlayers > 0) and (tr == st.totalPlayers)
         
-        currTime = NaiveDateTime.utc_now()
-        {ret,set} = if pr do
-            {NaiveDateTime.to_iso8601(NaiveDateTime.add(currTime, 30, :second)), NaiveDateTime.to_iso8601(currTime)}
-        else
-            {st.roundEndTime, st.roundStartTime}
-        end
-        
         %{
             history: st.history,
             guesses: st.guesses,
@@ -453,9 +401,7 @@ defmodule Bulls.Game do
             gameName: st.gameName,
             currRoundHistory: st.currRoundHistory,
             userList: st.userList,
-            previousWinners: st.previousWinners,
-            roundEndTime: ret,
-            roundStartTime: set
+            previousWinners: st.previousWinners
         }
     end
 end

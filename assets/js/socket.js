@@ -70,9 +70,3 @@ export function ch_push(guess) {
     .receive("ok", state_update)
     .receive("error", resp => { console.log("Unable to push", resp) });
 }
-
-export function ch_reset() {
-  channel.push("reset", {})
-    .receive("ok", state_update)
-    .receive("error", resp => { console.log("Unable to push", resp) });
-}

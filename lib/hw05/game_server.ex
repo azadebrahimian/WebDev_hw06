@@ -50,10 +50,6 @@ defmodule Bulls.GameServer do
         GenServer.call(reg(name), {:guess, name, letter, playerName})
     end
 
-    def reset(name) do
-        GenServer.call(reg(name), {:reset, name})
-    end
-
     def init(game) do
         Process.send_after(self(), :pook, 10_000)
         {:ok, game}
@@ -93,16 +89,6 @@ defmodule Bulls.GameServer do
 
     def handle_call({:guess, name, letter, playerName}, _from, game) do
         game = Game.guess_code(game, letter, playerName)
-        {:reply, game, game}
-    end
-
-    def handle_call({:reset, name}, _from, game) do
-        game = Game.begin()
-        {:reply, game, game}
-    end
-
-    def handle_call({:endRoundByTime, _name}, _from, game) do
-        game = Game.end_round_by_time(game)
         {:reply, game, game}
     end
 end
