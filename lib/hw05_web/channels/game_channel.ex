@@ -6,7 +6,6 @@ defmodule Hw05Web.GameChannel do
 
   @impl true
   def join("game:" <> name, payload, socket) do
-    IO.inspect "IPFOJEWPIOJGIOEPJGOWIGEWJPOG"
     if authorized?(payload) do
       GameServer.start(name)
       socket = socket
@@ -15,7 +14,7 @@ defmodule Hw05Web.GameChannel do
       |> assign(:playerType, "observer")
       game = GameServer.peek(name)
       view = socket.assigns[:name]
-      |> GameServer.peek()
+      |> GameServer.addUser(Map.get(payload, "name"))
       |> Game.view(Map.get(payload, "name"), "observer")
       {:ok, view, socket}
     else
@@ -63,7 +62,7 @@ defmodule Hw05Web.GameChannel do
     user = socket.assigns[:user]
     playerType = socket.assigns[:playerType]
     view = socket.assigns[:name]
-    |> GameServer.guess(l1)
+    |> GameServer.guess(l1, user)
     |> Game.view(user, playerType)
     broadcast(socket, "view", view)
     {:reply, {:ok, view}, socket}
@@ -92,16 +91,16 @@ defmodule Hw05Web.GameChannel do
     {:noreply, socket}
   end
 
-  @impl true
-  def handle_info(:after_join, socket) do
-    user = socket.assigns[:user]
-    name = socket.assigns[:name]
-    view = socket.assigns[:name]
-    |> GameServer.joinLobby()
-    |> Game.view(name, "player")
-    broadcast(socket, "view", view)
-    {:noreply, socket}
-  end
+  #@impl true
+  #def handle_info(:after_join, socket) do
+  #  user = socket.assigns[:user]
+  #  name = socket.assigns[:name]
+  #  view = socket.assigns[:name]
+  #  |> GameServer.joinLobby()
+  #  |> Game.view(name, "player")
+  #  broadcast(socket, "view", view)
+  #  {:noreply, socket}
+  #end
 
   # Add authorization logic here as required.
   defp authorized?(_payload) do

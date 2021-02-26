@@ -7,7 +7,7 @@ import {
 function Bulls() {
   const [state, setState] = useState({
     history: [],
-    guesses: 0,
+    guesses: 1,
     invalidGuess: false,
     won: false,
     name: "",
@@ -16,13 +16,16 @@ function Bulls() {
     ready: false,
     playerType: "player",
     totalPlayers: 0,
-    totalReadies: 0
+    totalReadies: 0,
+    userList: [],
+    previousWinners: []
   });
   const [guess, setGuess] = useState("");
+  const [recentGuess, setRecentGuess] = useState("")
 
   let { history, guesses, invalidGuess, won,
     name, gameName, playersReady, ready, playerType,
-    totalPlayers, totalReadies } = state;
+    totalPlayers, totalReadies, userList, previousWinners } = state;
 
   useEffect(() => {
     ch_join(setState);
@@ -38,6 +41,13 @@ function Bulls() {
 
   function guessCode() {
     ch_push({ letter: guess });
+    setRecentGuess(guess);
+    setGuess("");
+  }
+
+  function guessPass() {
+    ch_push({ letter: "pass" });
+    setRecentGuess("pass");
     setGuess("");
   }
 
@@ -48,10 +58,29 @@ function Bulls() {
     for (const h of history) {
       items.push(
         <tr key={c}>
-          <td>{c}</td>
+          <td>{h["roundNo"]}</td>
+          <td>{h["user"]}</td>
           <td>{h["guess"]}</td>
           <td className="Bull-col">{h["bulls"]}</td>
           <td className="Cow-col">{h["cows"]}</td>
+        </tr>
+      )
+      c++;
+    }
+
+    return items
+  }
+
+  function printScore() {
+    const items = []
+
+    let c = 1;
+    for (const h of userList) {
+      items.push(
+        <tr key={c}>
+          <td>{h["user"]}</td>
+          <td>{h["wins"]}</td>
+          <td>{h["losses"]}</td>
         </tr>
       )
       c++;
@@ -79,20 +108,34 @@ function Bulls() {
 
   if (!state.playersReady) {
     return (
-      <Setup state={state} />
-    );
-  }
-
-  if (won) {
-    return (
-      <div className="Ending-screen">
-        <div>You won!</div>
-        <button className="Ending-button" onClick={startNewGame}>Play again?</button>
+      <div>
+        <Setup state={state} />
+        <p>Previous Winners: {previousWinners}</p>
+        <div id="Scoreboard">
+          <table id="Scoreboard-table">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Wins</th>
+                <th>Losses</th>
+              </tr>
+            </thead>
+            <tbody>
+              {printScore()}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   }
 
-  if (guesses >= 8) {
+  // if (!state.playersReady) {
+  //   return (
+  //     <Setup state={state} />
+  //   );
+  // }
+
+  if (guesses >= 9) {
     return (
       <div className="Ending-screen">
         <div>You lost.</div>
@@ -108,7 +151,8 @@ function Bulls() {
         <table id="History-table">
           <thead>
             <tr>
-              <th>Attempt</th>
+              <th>Round</th>
+              <th>User</th>
               <th>Guess</th>
               <th className="Bull-col">Bulls</th>
               <th className="Cow-col">Cows</th>
@@ -134,12 +178,16 @@ function Bulls() {
           <button className="Base-button" onClick={guessCode}>
             Go!
         </button>
+          <button onClick={guessPass}>
+            Pass
+          </button>
+          <p>Current Guess: {recentGuess}</p>
         </div>}
-      {invalidGuess &&
+      {/* {invalidGuess &&
         <div id="Invalid">
           Invalid Entry
-      </div>}
-    </div>
+      </div>} */}
+    </div >
   );
 }
 

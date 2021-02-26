@@ -57,46 +57,162 @@ defmodule Bulls.Game do
         end
     end
 
-    def guess_code(st, guess) do
-        invalidG = if (String.length(guess) != 4) or (not check_if_unique(guess)) do
-            true
-        else    
-            false
-        end
-        
+    def guess_code(st, guess, playerName) do
+        invalidG = ((String.length(guess) != 4) or (not check_if_unique(guess))) and (guess !== "pass")
+
+        # Assume all entries are valid
         if invalidG do
             %{
                 invalidGuess: true,
                 won: false,
                 history: st.history,
                 guesses: st.guesses,
-                secretCode: st.secretCode
-            }
-        else
-            {b,c} = check_for_bulls_cows(st, guess)
-            w = if b == 4 do
-                true
-            else
-                false
-            end
-            
-            currHistory = st.history
-            currHistory = currHistory ++ [%{guess: guess, bulls: b, cows: c}]
-            currGuesses = st.guesses
-            currGuesses = currGuesses + 1
-            newGuess = ""
-            IO.inspect st
-            %{
-                invalidGuess: invalidG,
-                won: w,
-                history: currHistory,
-                guesses: currGuesses,
                 secretCode: st.secretCode,
                 totalPlayers: st.totalPlayers,
                 totalReadies: st.totalReadies,
                 playersReady: st.playersReady,
                 gameName: st.gameName
             }
+        else
+            {b,c} = if guess == "pass" do
+                {0,0}
+            else
+                check_for_bulls_cows(st, guess)
+            end
+            
+            #{b,c} = check_for_bulls_cows(st, guess)
+            #w = if b == 4 do
+            #    true
+            #else
+            #    st.won
+            #end
+            #w = b == 4 or st.won
+            
+            #currHistory = st.history
+            #currHistory = currHistory ++ [%{guess: guess, bulls: b, cows: c}]
+            
+            
+            currHistory = st.currRoundHistory
+            currHistory = make_or_alter_guess(currHistory, guess, b, c, playerName, st.guesses)
+            #currHistory = currHistory ++ [%{guess: guess, bulls: b, cows: c, user: playerName, roundNo: st.guesses}]
+            # WHEN NAMES ARE WORKING, COMMENT OUT THE LINE ABOVE ME AND REPLACE WITH LINE ABOVE IT
+           
+            #currGuesses = st.guesses
+            #currGuesses = currGuesses + 1
+            newGuess = ""
+            IO.inspect currHistory
+            if length(currHistory) == st.totalPlayers do
+                w = check_if_winner_exists(currHistory)
+                newHistory = st.history
+                newHistory = newHistory ++ currHistory
+                if w do
+                    pw = calculate_winners(currHistory)
+                    #ul = updateWinsLosses(st.userList, pw)
+                    {listOfPlayers,_acc} = Enum.map_reduce(currHistory, 0, fn x,acc -> {Map.get(x, :user),acc} end)
+                    ul = updateWinsLosses(st.userList, pw, listOfPlayers)
+                    %{
+                        invalidGuess: false,
+                        history: [],
+                        guesses: 1,
+                        secretCode: create_secret_code([]),
+                        totalPlayers: 0,
+                        totalReadies: 0,
+                        playersReady: false,
+                        gameName: st.gameName,
+                        currRoundHistory: [],
+                        userList: ul,
+                        previousWinners: pw
+                    }
+                else
+                    %{
+                        invalidGuess: invalidG,
+                        history: newHistory,
+                        guesses: st.guesses + 1,
+                        secretCode: st.secretCode,
+                        totalPlayers: st.totalPlayers,
+                        totalReadies: st.totalReadies,
+                        playersReady: st.playersReady,
+                        gameName: st.gameName,
+                        currRoundHistory: [],
+                        userList: st.userList,
+                        previousWinners: st.previousWinners
+                    }
+                end
+            else
+                %{
+                    invalidGuess: invalidG,
+                    history: st.history,
+                    guesses: st.guesses,
+                    secretCode: st.secretCode,
+                    totalPlayers: st.totalPlayers,
+                    totalReadies: st.totalReadies,
+                    playersReady: st.playersReady,
+                    gameName: st.gameName,
+                    currRoundHistory: currHistory,
+                    userList: st.userList,
+                    previousWinners: st.previousWinners
+                }
+            end
+            #%{
+            #    invalidGuess: invalidG,
+            #    won: w,
+            #    history: currHistory,
+            #    guesses: currGuesses,
+            #    secretCode: st.secretCode,
+            #    totalPlayers: st.totalPlayers,
+            #    totalReadies: st.totalReadies,
+            #    playersReady: st.playersReady,
+            #    gameName: st.gameName,
+            #    currRoundHistory: st.currRoundHistory
+            #}
+        end
+    end
+
+    def check_if_winner_exists(hist) do
+        if length(hist) == 0 do
+            false
+        else
+            Map.get(hd(hist), :bulls) == 4 or check_if_winner_exists(tl(hist))
+        end
+    end
+
+    def calculate_winners(hist) do
+        if length(hist) == 0 do
+            []
+        else
+            if Map.get(hd(hist), :bulls) == 4 do
+                [Map.get(hd(hist), :user)] ++ calculate_winners(tl(hist))
+            else
+                calculate_winners(tl(hist))
+            end
+        end
+    end
+
+    def updateWinsLosses(arr, winners, listOfPlayers) do
+        if length(arr) == 0 do
+            []
+        else
+            if Enum.member?(winners, Map.get(hd(arr), :user)) do
+                [%{user: Map.get(hd(arr), :user), wins: Map.get(hd(arr), :wins) + 1, losses: Map.get(hd(arr), :losses)}] ++ updateWinsLosses(tl(arr), winners, listOfPlayers)
+            else
+                if Enum.member?(listOfPlayers, Map.get(hd(arr), :user)) do
+                    [%{user: Map.get(hd(arr), :user), wins: Map.get(hd(arr), :wins), losses: Map.get(hd(arr), :losses) + 1}] ++ updateWinsLosses(tl(arr), winners, listOfPlayers)
+                else
+                    [hd(arr)] ++ updateWinsLosses(tl(arr), winners, listOfPlayers)
+                end
+            end
+        end
+    end
+
+    def make_or_alter_guess(arr, guess, b, c, user, roundNo) do
+        if length(arr) == 0 do
+            [%{guess: guess, bulls: b, cows: c, user: user, roundNo: roundNo}]
+        else
+            if Map.get(hd(arr), :user) == user do
+                [%{guess: guess, bulls: b, cows: c, user: user, roundNo: roundNo}] ++ tl(arr)
+            else
+                [hd(arr)] ++ make_or_alter_guess(tl(arr), guess, b, c, user, roundNo)
+            end
         end
     end
     
@@ -127,14 +243,50 @@ defmodule Bulls.Game do
         %{
             secretCode: create_secret_code([]),
             history: [],
-            guesses: 0,
+            guesses: 1,
             invalidGuess: false,
-            won: false,
             totalPlayers: 0,
             totalReadies: 0,
             playersReady: false,
-            gameName: name
+            gameName: name,
+            currRoundHistory: [],
+            userList: [],
+            previousWinners: []
         }
+    end
+
+    def add_player(st, playerName) do
+        if is_player_joined(st.userList, playerName) do
+            st
+        else
+            ul = st.userList
+            ul = ul ++ [%{user: playerName, wins: 0, losses: 0}]
+            %{
+                secretCode: st.secretCode,
+                history: st.history,
+                guesses: st.guesses,
+                invalidGuess: st.invalidGuess,
+                totalPlayers: st.totalPlayers,
+                totalReadies: st.totalReadies,
+                playersReady: st.playersReady,
+                gameName: st.gameName,
+                currRoundHistory: st.currRoundHistory,
+                userList: ul,
+                previousWinners: st.previousWinners
+            }
+        end
+    end
+
+    def is_player_joined(arr, playerName) do
+        if length(arr) == 0 do
+            false
+        else
+            if Map.get(hd(arr), :user) == playerName do
+                true
+            else
+                is_player_joined(tl(arr), playerName)
+            end
+        end
     end
 
     def view(st, name, type) do
@@ -143,13 +295,14 @@ defmodule Bulls.Game do
             history: st.history,
             guesses: st.guesses,
             invalidGuess: st.invalidGuess,
-            won: st.won,
             name: name,
             totalPlayers: st.totalPlayers,
             totalReadies: st.totalReadies,
             playersReady: st.playersReady,
             playerType: type,
-            gameName: st.gameName
+            gameName: st.gameName,
+            userList: st.userList,
+            previousWinners: st.previousWinners
         }
     end
 
@@ -164,12 +317,14 @@ defmodule Bulls.Game do
             history: st.history,
             guesses: st.guesses,
             invalidGuess: st.invalidGuess,
-            won: st.won,
             secretCode: st.secretCode,
             totalPlayers: tp,
             totalReadies: st.totalReadies,
             playersReady: st.playersReady,
-            gameName: st.gameName
+            gameName: st.gameName,
+            currRoundHistory: st.currRoundHistory,
+            userList: st.userList,
+            previousWinners: st.previousWinners
         }
     end
 
@@ -190,12 +345,14 @@ defmodule Bulls.Game do
             history: st.history,
             guesses: st.guesses,
             invalidGuess: st.invalidGuess,
-            won: st.won,
             secretCode: st.secretCode,
             totalPlayers: st.totalPlayers,
             totalReadies: tr,
             playersReady: pr,
-            gameName: st.gameName
+            gameName: st.gameName,
+            currRoundHistory: st.currRoundHistory,
+            userList: st.userList,
+            previousWinners: st.previousWinners
         }
     end
 end
