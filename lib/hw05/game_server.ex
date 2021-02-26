@@ -34,8 +34,8 @@ defmodule Bulls.GameServer do
         GenServer.call(reg(name), {:joinLobby, name})
     end
 
-    def setPlayerType(name, type) do
-        GenServer.call(reg(name), {:setPlayerType, name, type})
+    def setPlayerType(name, type, user) do
+        GenServer.call(reg(name), {:setPlayerType, name, type, user})
     end
 
     def setReady(name, ready) do
@@ -76,8 +76,8 @@ defmodule Bulls.GameServer do
         {:noreply, game}
     end
 
-    def handle_call({:setPlayerType, name, type}, _from, game) do
-        game = Game.set_player_type(game, type)
+    def handle_call({:setPlayerType, name, type, user}, _from, game) do
+        game = Game.set_player_type(game, type, user)
         {:reply, game, game}
     end
 
@@ -98,6 +98,11 @@ defmodule Bulls.GameServer do
 
     def handle_call({:reset, name}, _from, game) do
         game = Game.begin()
+        {:reply, game, game}
+    end
+
+    def handle_call({:endRoundByTime, _name}, _from, game) do
+        game = Game.end_round_by_time(game)
         {:reply, game, game}
     end
 end

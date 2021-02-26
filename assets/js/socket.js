@@ -22,7 +22,9 @@ let state = {
   playersReady: false,
   playerType: "observer",
   userList: [],
-  previousWinners: []
+  previousWinners: [],
+  roundEndTime: "",
+  roundStartTime: ""
 };
 
 let callback = null;
@@ -38,14 +40,11 @@ function state_update(st) {
 export function ch_join(cb) {
   callback = cb;
   callback(state);
-  if (channel) {
-    channel.on("view", state_update);
-  }
 }
 
 export function ch_login(name, gameName) {
   channel = socket.channel("game:".concat(gameName), { name: name, gameName: gameName });
-  //channel.on("view", state_update);
+  channel.on("view", state_update);
 
   channel.join()
     .receive("ok", state_update)

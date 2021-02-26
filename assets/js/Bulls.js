@@ -18,17 +18,29 @@ function Bulls() {
     totalPlayers: 0,
     totalReadies: 0,
     userList: [],
-    previousWinners: []
+    previousWinners: [],
+    roundEndTime: "",
+    roundStartTime: ""
   });
   const [guess, setGuess] = useState("");
   const [recentGuess, setRecentGuess] = useState("")
 
   let { history, guesses, invalidGuess, won,
     name, gameName, playersReady, ready, playerType,
-    totalPlayers, totalReadies, userList, previousWinners } = state;
+    totalPlayers, totalReadies, userList, previousWinners,
+    roundEndTime, roundStartTime } = state;
+
+
+  const [time, setTime] = React.useState(0);
 
   useEffect(() => {
     ch_join(setState);
+    const timer = setInterval(() => {
+      setTime(prevTime => prevTime + 1); // <-- Change this line!
+    }, 1000);
+    return () => {
+      clearInterval(timer);
+    };
   });
 
   function checkIfNumber(e) {
@@ -135,17 +147,28 @@ function Bulls() {
   //   );
   // }
 
-  if (guesses >= 9) {
-    return (
-      <div className="Ending-screen">
-        <div>You lost.</div>
-        <button className="Ending-button" onClick={startNewGame}>Play again?</button>
-      </div>
-    );
+  // if (guesses >= 9) {
+  //   return (
+  //     <div className="Ending-screen">
+  //       <div>You lost.</div>
+  //       <button className="Ending-button" onClick={startNewGame}>Play again?</button>
+  //     </div>
+  //   );
+  // }
+
+  function calculateTime(start, end) {
+    let sd = new Date(start);
+    let ed = new Date(end);
+    let cd = new Date();
+    let diff1 = sd - cd;
+    let diff2 = ed - cd;
+    return diff2 - diff1;
   }
 
   return (
     <div className="Game">
+      {/* <p>Time: {subtractTime(roundEndTime)}</p> */}
+      <p>Time: {calculateTime(roundStartTime, roundEndTime)}</p>
       <p>Name: {name}</p>
       <div id="History">
         <table id="History-table">

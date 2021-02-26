@@ -100,7 +100,7 @@ defmodule Bulls.Game do
             #currGuesses = st.guesses
             #currGuesses = currGuesses + 1
             newGuess = ""
-            IO.inspect currHistory
+            
             if length(currHistory) == st.totalPlayers do
                 w = check_if_winner_exists(currHistory)
                 newHistory = st.history
@@ -121,9 +121,12 @@ defmodule Bulls.Game do
                         gameName: st.gameName,
                         currRoundHistory: [],
                         userList: ul,
-                        previousWinners: pw
+                        previousWinners: pw,
+                        roundEndTime: "",
+                        roundStartTime: ""
                     }
                 else
+                    currTime = NaiveDateTime.utc_now()
                     %{
                         invalidGuess: invalidG,
                         history: newHistory,
@@ -135,7 +138,9 @@ defmodule Bulls.Game do
                         gameName: st.gameName,
                         currRoundHistory: [],
                         userList: st.userList,
-                        previousWinners: st.previousWinners
+                        previousWinners: st.previousWinners,
+                        roundEndTime: NaiveDateTime.to_iso8601(NaiveDateTime.add(currTime, 30, :second)),
+                        roundStartTime: NaiveDateTime.to_iso8601(currTime)
                     }
                 end
             else
@@ -150,7 +155,9 @@ defmodule Bulls.Game do
                     gameName: st.gameName,
                     currRoundHistory: currHistory,
                     userList: st.userList,
-                    previousWinners: st.previousWinners
+                    previousWinners: st.previousWinners,
+                    roundEndTime: st.roundEndTime,
+                    roundStartTime: st.roundStartTime
                 }
             end
             #%{
@@ -165,6 +172,75 @@ defmodule Bulls.Game do
             #    gameName: st.gameName,
             #    currRoundHistory: st.currRoundHistory
             #}
+        end
+    end
+
+    def end_round_by_time(st) do
+        w = check_if_winner_exists(st.currRoundHistory)
+        {listOfPlayersThatGuessed,_acc} = Enum.map_reduce(st.currRoundHistory, 0, fn x,acc -> {Map.get(x, :user),acc} end)
+        listOfPlayers = get_players(st.userList)
+        if w do
+            pw = calculate_winners(st.currRoundHistory)
+            ul = updateWinsLosses(st.userList, pw, listOfPlayers)
+            %{
+                invalidGuess: false,
+                history: [],
+                guesses: 1,
+                secretCode: create_secret_code([]),
+                totalPlayers: 0,
+                totalReadies: 0,
+                playersReady: false,
+                gameName: st.gameName,
+                currRoundHistory: [],
+                userList: ul,
+                previousWinners: pw,
+                roundEndTime: "",
+                roundStartTime: ""
+            }
+        else
+            currTime = NaiveDateTime.utc_now()
+            currRoundHistoryWithPasses = add_passes(listOfPlayers, listOfPlayersThatGuessed, st.currRoundHistory, st.guesses)
+            newHistory = st.history
+            newHistory = newHistory ++ currRoundHistoryWithPasses
+            %{
+                invalidGuess: st.invalidGuess,
+                history: newHistory,
+                guesses: st.guesses + 1,
+                secretCode: st.secretCode,
+                totalPlayers: st.totalPlayers,
+                totalReadies: st.totalReadies,
+                playersReady: st.playersReady,
+                gameName: st.gameName,
+                currRoundHistory: [],
+                userList: st.userList,
+                previousWinners: st.previousWinners,
+                roundEndTime: NaiveDateTime.to_iso8601(NaiveDateTime.add(currTime, 30, :second)),
+                roundStartTime: NaiveDateTime.to_iso8601(currTime)
+            }
+        end
+    end
+
+    def add_passes(lop, loptg, crh, rn) do
+        if length(lop) == 0 do
+            crh
+        else
+            if Enum.member?(loptg, hd(lop)) do
+                add_passes(tl(lop), loptg, crh, rn)
+            else
+                [%{guess: "pass", bulls: 0, cows: 0, user: hd(lop), roundNo: rn}] ++ add_passes(tl(lop), loptg, crh, rn)
+            end
+        end
+    end
+
+    def get_players(arr) do
+        if length(arr) == 0 do
+            []
+        else
+            if Map.get(hd(arr), :type) == "player" do
+                [Map.get(hd(arr), :user)] ++ get_players(tl(arr))
+            else
+                get_players(tl(arr))
+            end
         end
     end
 
@@ -193,10 +269,10 @@ defmodule Bulls.Game do
             []
         else
             if Enum.member?(winners, Map.get(hd(arr), :user)) do
-                [%{user: Map.get(hd(arr), :user), wins: Map.get(hd(arr), :wins) + 1, losses: Map.get(hd(arr), :losses)}] ++ updateWinsLosses(tl(arr), winners, listOfPlayers)
+                [%{user: Map.get(hd(arr), :user), wins: Map.get(hd(arr), :wins) + 1, losses: Map.get(hd(arr), :losses), type: Map.get(hd(arr), :type)}] ++ updateWinsLosses(tl(arr), winners, listOfPlayers)
             else
                 if Enum.member?(listOfPlayers, Map.get(hd(arr), :user)) do
-                    [%{user: Map.get(hd(arr), :user), wins: Map.get(hd(arr), :wins), losses: Map.get(hd(arr), :losses) + 1}] ++ updateWinsLosses(tl(arr), winners, listOfPlayers)
+                    [%{user: Map.get(hd(arr), :user), wins: Map.get(hd(arr), :wins), losses: Map.get(hd(arr), :losses) + 1, type: Map.get(hd(arr), :type)}] ++ updateWinsLosses(tl(arr), winners, listOfPlayers)
                 else
                     [hd(arr)] ++ updateWinsLosses(tl(arr), winners, listOfPlayers)
                 end
@@ -251,7 +327,9 @@ defmodule Bulls.Game do
             gameName: name,
             currRoundHistory: [],
             userList: [],
-            previousWinners: []
+            previousWinners: [],
+            roundEndTime: "",
+            roundStartTime: ""
         }
     end
 
@@ -260,7 +338,7 @@ defmodule Bulls.Game do
             st
         else
             ul = st.userList
-            ul = ul ++ [%{user: playerName, wins: 0, losses: 0}]
+            ul = ul ++ [%{user: playerName, wins: 0, losses: 0, type: "observer"}]
             %{
                 secretCode: st.secretCode,
                 history: st.history,
@@ -272,7 +350,9 @@ defmodule Bulls.Game do
                 gameName: st.gameName,
                 currRoundHistory: st.currRoundHistory,
                 userList: ul,
-                previousWinners: st.previousWinners
+                previousWinners: st.previousWinners,
+                roundEndTime: st.roundEndTime,
+                roundStartTime: st.roundStartTime
             }
         end
     end
@@ -302,16 +382,32 @@ defmodule Bulls.Game do
             playerType: type,
             gameName: st.gameName,
             userList: st.userList,
-            previousWinners: st.previousWinners
+            previousWinners: st.previousWinners,
+            roundEndTime: st.roundEndTime,
+            roundStartTime: st.roundStartTime
         }
     end
 
-    def set_player_type(st, type) do
+    def set_player_type_in_state(arr, type, user) do
+        if length(arr) == 0 do
+            []
+        else
+            if Map.get(hd(arr), :user) == user do
+                [%{user: Map.get(hd(arr), :user), wins: Map.get(hd(arr), :wins), losses: Map.get(hd(arr), :losses), type: type}] ++ tl(arr)
+            else
+                [hd(arr)] ++ set_player_type_in_state(tl(arr), type, user)
+            end
+        end
+    end
+
+    def set_player_type(st, type, user) do
         tp = if type == "player" do
             st.totalPlayers + 1
         else
             st.totalPlayers - 1
         end
+
+        ul = set_player_type_in_state(st.userList, type, user)
 
         %{
             history: st.history,
@@ -323,8 +419,10 @@ defmodule Bulls.Game do
             playersReady: st.playersReady,
             gameName: st.gameName,
             currRoundHistory: st.currRoundHistory,
-            userList: st.userList,
-            previousWinners: st.previousWinners
+            userList: ul,
+            previousWinners: st.previousWinners,
+            roundEndTime: st.roundEndTime,
+            roundStartTime: st.roundStartTime
         }
     end
 
@@ -335,12 +433,15 @@ defmodule Bulls.Game do
             st.totalReadies - 1
         end
 
-        pr = if (st.totalPlayers > 0) and (tr == st.totalPlayers) do
-            true
+        pr = (st.totalPlayers > 0) and (tr == st.totalPlayers)
+        
+        currTime = NaiveDateTime.utc_now()
+        {ret,set} = if pr do
+            {NaiveDateTime.to_iso8601(NaiveDateTime.add(currTime, 30, :second)), NaiveDateTime.to_iso8601(currTime)}
         else
-            false
+            {st.roundEndTime, st.roundStartTime}
         end
-
+        
         %{
             history: st.history,
             guesses: st.guesses,
@@ -352,7 +453,9 @@ defmodule Bulls.Game do
             gameName: st.gameName,
             currRoundHistory: st.currRoundHistory,
             userList: st.userList,
-            previousWinners: st.previousWinners
+            previousWinners: st.previousWinners,
+            roundEndTime: ret,
+            roundStartTime: set
         }
     end
 end

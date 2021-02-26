@@ -22,25 +22,13 @@ defmodule Hw05Web.GameChannel do
     end
   end
 
-  #@impl true
-  #def handle_in("login", %{"name" => user, "gameName" => name}, socket) do
-  #  socket = assign(socket, :user, user)
-  #  socket = assign(socket, :name, name)
-  #  socket = assign(socket, :playerType, "player")
-  #  view = socket.assigns[:name]
-  #  |> GameServer.joinLobby()
-  #  |> Game.view(user, "player")
-  #  broadcast(socket, "view", view)
-  #  {:reply, {:ok, view}, socket}
-  #end
-
   @impl true
   def handle_in("setType", %{"type" => type}, socket) do
     socket = assign(socket, :playerType, type)
     playerType = socket.assigns[:playerType]
     user = socket.assigns[:user]
     view = socket.assigns[:name]
-    |> GameServer.setPlayerType(type)
+    |> GameServer.setPlayerType(type, user)
     |> Game.view(user, playerType)
     broadcast(socket, "view", view)
     {:reply, {:ok, view}, socket}
