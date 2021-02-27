@@ -1,4 +1,4 @@
-# Hw05
+# Hw06
 
 To start your Phoenix server:
 
